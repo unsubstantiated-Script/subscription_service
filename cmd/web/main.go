@@ -36,6 +36,7 @@ func initDB() *sql.DB {
 	if conn == nil {
 		log.Panic("Could not connect to DB")
 	}
+	return conn
 }
 
 func connectToDB() *sql.DB {
@@ -46,21 +47,20 @@ func connectToDB() *sql.DB {
 	for {
 		connection, err := openDB(dsn)
 		if err == nil {
-			log.Println("Postgres not yet ready...")
-		} else {
 			log.Println("Postgres connected")
 			return connection
 		}
+
+		log.Println("Postgres not yet ready...")
 
 		if counts > 10 {
 			log.Panic("Could not connect to DB")
 			return nil
 		}
 
-		counts++
 		log.Println("Backing off for 1 second...")
 		time.Sleep(1 * time.Second)
-		continue
+		counts++
 	}
 }
 
