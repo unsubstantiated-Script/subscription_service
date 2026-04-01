@@ -8,3 +8,5 @@ Next Release
     - SCS Redis Store
     - PGConn
     - PGX
+    - Docker Compose File
+    - 
