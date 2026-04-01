@@ -2,12 +2,14 @@ package main
 
 import (
 	"database/sql"
+	"encoding/gob"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"subscription_service/data"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -127,14 +129,30 @@ func openDB(dsn string) (*sql.DB, error) {
 }
 
 func initSession() *scs.SessionManager {
+	gob.Register(data.User{})
 	//set up sessions
 	session := scs.New()
 	session.Store = redisstore.New(initRedis())
 	session.Lifetime = 24 * time.Hour
 	session.Cookie.Persist = true
 	session.Cookie.SameSite = http.SameSiteLaxMode
-	session.Cookie.Secure = true
+	session.Cookie.Secure = sessionCookieSecureFromEnv()
 	return session
+}
+
+// sessionCookieSecureFromEnv keeps local HTTP development working by default,
+// while allowing secure cookies in production via env configuration.
+func sessionCookieSecureFromEnv() bool {
+	secureOverride := strings.ToLower(strings.TrimSpace(os.Getenv("SESSION_COOKIE_SECURE")))
+	switch secureOverride {
+	case "1", "true", "yes", "on":
+		return true
+	case "0", "false", "no", "off":
+		return false
+	}
+
+	appEnv := strings.ToLower(strings.TrimSpace(os.Getenv("APP_ENV")))
+	return appEnv == "production"
 }
 
 func initRedis() *redis.Pool {
