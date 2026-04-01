@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -16,7 +17,7 @@ import (
 	_ "github.com/jackc/pgx/v4/stdlib"
 )
 
-const webPort = "80"
+const webPort = "8080"
 
 func main() {
 	//connect to DB
@@ -46,6 +47,28 @@ func main() {
 	// setup mail
 
 	// listen for web connections
+	app.serve()
+}
+
+func (app *Config) serve() {
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = webPort
+	}
+
+	// start http server
+	srv := &http.Server{
+		Addr:    fmt.Sprintf(":%s", port),
+		Handler: app.routes(),
+	}
+
+	app.InfoLog.Println("Starting server on port", port)
+
+	err := srv.ListenAndServe()
+	if err != nil {
+		log.Panic(err)
+	}
+
 }
 
 func initDB() *sql.DB {
